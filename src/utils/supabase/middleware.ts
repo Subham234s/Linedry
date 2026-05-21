@@ -38,6 +38,19 @@ export const createClient = (request: NextRequest) => {
 };
 
 export async function updateSession(request: NextRequest) {
+  // CRITICAL: Let the OAuth callback route execute without interference.
+  // The callback handler needs to run exchangeCodeForSession() before any
+  // session exists. If we call getUser() or apply redirect logic here,
+  // we would either redirect the user away (losing the ?code= param)
+  // or interfere with the cookie-setting process.
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+  }
+
   const { supabase, supabaseResponse } = createClient(request);
 
   const {
